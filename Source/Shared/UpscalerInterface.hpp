@@ -1191,6 +1191,34 @@ void UpscalerImpl::GetUpscalerProps(UpscalerProps& upscalerProps) const {
         upscalerProps.renderResolutionMin.h = m_Desc.upscaleResolution.h / 2;
     } else
         upscalerProps.renderResolutionMin = upscalerProps.renderResolution; // no DRS support because of DLSS
+
+#if NRI_ENABLE_NGX_SDK
+    if ((m_Desc.type == UpscalerType::DLSR || m_Desc.type == UpscalerType::DLRR) && m.ngx && m.ngx->params) {
+        NVSDK_NGX_PerfQuality_Value qualityValue;
+        if (m_Desc.mode == UpscalerMode::NATIVE)
+            qualityValue = NVSDK_NGX_PerfQuality_Value_DLAA;
+        else if (m_Desc.mode == UpscalerMode::ULTRA_QUALITY)
+            qualityValue = NVSDK_NGX_PerfQuality_Value_UltraQuality;
+        else if (m_Desc.mode == UpscalerMode::QUALITY)
+            qualityValue = NVSDK_NGX_PerfQuality_Value_MaxQuality;
+        else if (m_Desc.mode == UpscalerMode::BALANCED)
+            qualityValue = NVSDK_NGX_PerfQuality_Value_Balanced;
+        else if (m_Desc.mode == UpscalerMode::PERFORMANCE)
+            qualityValue = NVSDK_NGX_PerfQuality_Value_MaxPerf;
+        else
+            qualityValue = NVSDK_NGX_PerfQuality_Value_UltraPerformance;
+
+        unsigned int optW = 0, optH = 0, maxW = 0, maxH = 0, minW = 0, minH = 0;
+        float sharpness = 0.0f;
+        NVSDK_NGX_Result ngxResult = NGX_DLSS_GET_OPTIMAL_SETTINGS(
+            m.ngx->params,
+            m_Desc.upscaleResolution.w, m_Desc.upscaleResolution.h,
+            qualityValue, &optW, &optH, &maxW, &maxH, &minW, &minH, &sharpness);
+
+        if (ngxResult == NVSDK_NGX_Result_Success && optW > 0 && optH > 0)
+            upscalerProps.renderResolution = {(Dim_t)optW, (Dim_t)optH};
+    }
+#endif
 }
 
 void UpscalerImpl::CmdDispatchUpscale(CommandBuffer& commandBuffer, const DispatchUpscaleDesc& dispatchUpscaleDesc) {
