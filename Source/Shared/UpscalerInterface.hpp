@@ -1050,22 +1050,26 @@ Result UpscalerImpl::Create(const UpscalerDesc& upscalerDesc) {
 
             void* commandBufferNative = m_iCore.GetCommandBufferNativeObject(commandBuffer);
 
+            // Ray Reconstruction (DLSS-D) uses its own preset-hint parameters, distinct
+            // from the Super Resolution (DLSS) ones; pick the matching set by upscaler type.
+            const bool isDLRR = upscalerDesc.type == UpscalerType::DLRR;
+
             NVSDK_NGX_PerfQuality_Value qualityValue = NVSDK_NGX_PerfQuality_Value_UltraPerformance;
             if (upscalerDesc.mode == UpscalerMode::NATIVE) {
                 qualityValue = NVSDK_NGX_PerfQuality_Value_DLAA;
-                NVSDK_NGX_Parameter_SetUI(m.ngx->params, NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, upscalerDesc.preset);
+                NVSDK_NGX_Parameter_SetUI(m.ngx->params, isDLRR ? NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_DLAA : NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, upscalerDesc.preset);
             } else if (upscalerDesc.mode == UpscalerMode::QUALITY || upscalerDesc.mode == UpscalerMode::ULTRA_QUALITY) {
                 qualityValue = NVSDK_NGX_PerfQuality_Value_MaxQuality;
-                NVSDK_NGX_Parameter_SetUI(m.ngx->params, NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, upscalerDesc.preset);
+                NVSDK_NGX_Parameter_SetUI(m.ngx->params, isDLRR ? NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Quality : NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, upscalerDesc.preset);
             } else if (upscalerDesc.mode == UpscalerMode::BALANCED) {
                 qualityValue = NVSDK_NGX_PerfQuality_Value_Balanced;
-                NVSDK_NGX_Parameter_SetUI(m.ngx->params, NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, upscalerDesc.preset);
+                NVSDK_NGX_Parameter_SetUI(m.ngx->params, isDLRR ? NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Balanced : NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, upscalerDesc.preset);
             } else if (upscalerDesc.mode == UpscalerMode::PERFORMANCE) {
                 qualityValue = NVSDK_NGX_PerfQuality_Value_MaxPerf;
-                NVSDK_NGX_Parameter_SetUI(m.ngx->params, NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, upscalerDesc.preset);
+                NVSDK_NGX_Parameter_SetUI(m.ngx->params, isDLRR ? NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Performance : NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, upscalerDesc.preset);
             } else if (upscalerDesc.mode == UpscalerMode::ULTRA_PERFORMANCE) {
                 qualityValue = NVSDK_NGX_PerfQuality_Value_UltraPerformance;
-                NVSDK_NGX_Parameter_SetUI(m.ngx->params, NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, upscalerDesc.preset);
+                NVSDK_NGX_Parameter_SetUI(m.ngx->params, isDLRR ? NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_UltraPerformance : NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, upscalerDesc.preset);
             }
 
             int32_t featureCreateFlags = 0;
